@@ -11,17 +11,24 @@ from selenium.webdriver.support import expected_conditions as EC
 APP_URL = os.environ.get('APP_URL', 'http://32.236.12.162:3000')
 
 def get_driver():
-    """Setup headless Chrome - required for Jenkins on EC2"""
+    """Setup headless Chrome - optimized for Docker/Jenkins synchronization"""
     options = Options()
-    options.add_argument("--headless")
+    
+    # Essential flags for running in a Docker container
+    options.add_argument("--headless=new")  # Using the improved headless engine
     options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-dev-shm-usage") # Prevents crashes due to low /dev/shm
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
-    driver = webdriver.Chrome(options=options)
+    options.add_argument("--remote-allow-origins=*") # Avoids CORS/Header issues
+    
+    # Explicitly define the service path established in your Dockerfile
+    # This ensures Selenium doesn't look for a default driver elsewhere
+    service = Service("/usr/local/bin/chromedriver")
+    
+    driver = webdriver.Chrome(service=service, options=options)
     driver.implicitly_wait(10)
     return driver
-
 @pytest.fixture(scope="module")
 def driver():
     d = get_driver()
