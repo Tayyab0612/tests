@@ -1,39 +1,38 @@
 import pytest
-import time
 import os
+import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-# Updated to your specific EC2 IP and Port 3000
-APP_URL = os.environ.get('APP_URL', 'http://32.236.12.162:3000')
+# 👉 THIS IS THE MISSING LINE 👈
+from selenium.webdriver.chrome.service import Service 
+
+# Use environment variable for flexibility in Jenkins
+APP_URL = os.environ.get('APP_URL', 'http://localhost:3000')
 
 def get_driver():
     """Setup headless Chrome - optimized for Docker/Jenkins synchronization"""
     options = Options()
     
     # Essential flags for running in a Docker container
-    options.add_argument("--headless=new")  # Using the improved headless engine
+    options.add_argument("--headless=new") 
     options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage") # Prevents crashes due to low /dev/shm
+    options.add_argument("--disable-dev-shm-usage") 
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
-    options.add_argument("--remote-allow-origins=*") # Avoids CORS/Header issues
+    options.add_argument("--remote-allow-origins=*") 
     
-    # Explicitly define the service path established in your Dockerfile
-    # This ensures Selenium doesn't look for a default driver elsewhere
+    # Explicitly define the service path
     service = Service("/usr/local/bin/chromedriver")
     
     driver = webdriver.Chrome(service=service, options=options)
     driver.implicitly_wait(10)
     return driver
-@pytest.fixture(scope="module")
-def driver():
-    d = get_driver()
-    yield d
-    d.quit()
+
+# ... (rest of your tests remain the same)
 
 class TestShopZone:
     # 1. Homepage loads successfully
