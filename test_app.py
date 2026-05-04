@@ -109,4 +109,3 @@ class TestShopZone:
         driver.get(f"{APP_URL}/auth/login")
         inputs = driver.find_elements(By.TAG_NAME, "input")
         assert len(inputs) > 0
-TESTEOF
