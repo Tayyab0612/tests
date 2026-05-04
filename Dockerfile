@@ -1,4 +1,3 @@
-cat > ~/devops-assignment01/Dockerfile.test << 'DOCKEREOF'
 FROM python:3.9-slim
 
 # Install system dependencies for Chrome
