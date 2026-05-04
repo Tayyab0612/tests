@@ -37,37 +37,27 @@ RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub \
        > /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
     && apt-get install -y google-chrome-stable \
-    && rm -rf /var/lib/apt/lists/* \
-    && google-chrome --version
+    && rm -rf /var/lib/apt/lists/*
 
 # Install matching ChromeDriver
 RUN CHROME_VER=$(google-chrome --version | grep -oP '\d+' | head -1) \
-    && echo "Chrome major version: ${CHROME_VER}" \
-    && DRIVER_VER=$(curl -s \
-       "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VER}") \
-    && echo "ChromeDriver version: ${DRIVER_VER}" \
-    && wget -q \
-       "https://chromedriver.storage.googleapis.com/${DRIVER_VER}/chromedriver_linux64.zip" \
-       -O /tmp/chromedriver.zip \
+    && DRIVER_VER=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VER}") \
+    && wget -q "https://chromedriver.storage.googleapis.com/${DRIVER_VER}/chromedriver_linux64.zip" -O /tmp/chromedriver.zip \
     && unzip -o /tmp/chromedriver.zip -d /usr/local/bin/ \
     && chmod +x /usr/local/bin/chromedriver \
-    && rm /tmp/chromedriver.zip \
-    && chromedriver --version
+    && rm /tmp/chromedriver.zip
 
-WORKDIR /tests
+WORKDIR /app
 
-# Install Python test dependencies
-COPY tests/requirements.txt .
+# Install Python test dependencies from the tests repo root
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy test files into container
-COPY tests/ .
+# Copy all files (including test_app.py and the app-code folder)
+COPY . .
 
-# Create results output directory
-RUN mkdir -p /tests/test-results
+# Exposure for the app
+EXPOSE 3000
 
-CMD ["pytest", "test_app.py", "-v", \
-     "--html=/tests/test-results/report.html", \
-     "--self-contained-html", \
-     "--junit-xml=/tests/test-results/results.xml"]
-DOCKEREOF
+# Start the application (Update this if your app start command is different)
+CMD ["python3", "-m", "http.server", "3000"]
