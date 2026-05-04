@@ -1,6 +1,6 @@
 FROM python:3.9-slim
 
-# Install system dependencies for Chrome
+# 1. Install system dependencies
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
@@ -29,23 +29,18 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Google Chrome stable
-# Hardcoded fix for version 147 mismatch
+# 2. Install Google Chrome
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub \
+      | gpg --dearmor > /usr/share/keyrings/google-chrome.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] \
+       http://dl.google.com/linux/chrome/deb/ stable main" \
+       > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/*
+
+# 3. Install Matching ChromeDriver (Hardcoded to match version 147)
 RUN wget -q "https://storage.googleapis.com/chrome-for-testing-public/147.0.7727.137/linux64/chromedriver-linux64.zip" -O /tmp/chromedriver.zip \
-    && unzip -o /tmp/chromedriver.zip -d /tmp/ \
-    && mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/ \
-    && chmod +x /usr/local/bin/chromedriver \
-    && rm -rf /tmp/chromedriver.zip /tmp/chromedriver-linux64
-
-# Install matching ChromeDriver
-# ... (previous steps for installing google-chrome-stable)
-
-# Improved ChromeDriver installation to match EXACT browser version
-RUN CHROME_MAJOR_VERSION=$(google-chrome --version | sed -E 's/.* ([0-9]+)(\.[0-9]+){3}.*/\1/') \
-    && echo "Detected Chrome Major Version: ${CHROME_MAJOR_VERSION}" \
-    && DRIVER_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" \
-       | jq -r ".channels.Stable.downloads.chromedriver[] | select(.platform == \"linux64\") | .url") \
-    && wget -q "$DRIVER_URL" -O /tmp/chromedriver.zip \
     && unzip -o /tmp/chromedriver.zip -d /tmp/ \
     && mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/ \
     && chmod +x /usr/local/bin/chromedriver \
@@ -53,15 +48,12 @@ RUN CHROME_MAJOR_VERSION=$(google-chrome --version | sed -E 's/.* ([0-9]+)(\.[0-
 
 WORKDIR /app
 
-# Copy requirements from tests repo root
+# 4. Final Setup
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the app code (cloned into app-code/ by Jenkins) and the test script
 COPY app-code/ .
 COPY test_app.py .
 
 EXPOSE 3000
-
-# Start the application
 CMD ["python3", "-m", "http.server", "3000"]
