@@ -1,4 +1,3 @@
-cat > ~/devops-assignment01/tests/test_app.py << 'TESTEOF'
 import pytest
 import time
 import os
