@@ -25,12 +25,22 @@ def get_driver():
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--remote-allow-origins=*") 
     
-    # Explicitly define the service path
     service = Service("/usr/local/bin/chromedriver")
-    
     driver = webdriver.Chrome(service=service, options=options)
     driver.implicitly_wait(10)
     return driver
+
+@pytest.fixture
+def driver():
+    """Pytest fixture to initialize and close the browser for each test"""
+    # 1. Setup: Get the driver instance
+    driver_instance = get_driver()
+    
+    # 2. Yield: Give the driver to the test function
+    yield driver_instance
+    
+    # 3. Teardown: Quit the browser after the test finishes to free memory
+    driver_instance.quit()
 
 # ... (rest of your tests remain the same)
 
