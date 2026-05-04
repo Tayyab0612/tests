@@ -40,12 +40,17 @@ RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub \
     && rm -rf /var/lib/apt/lists/*
 
 # Install matching ChromeDriver
-RUN CHROME_VER=$(google-chrome --version | grep -oP '\d+' | head -1) \
-    && DRIVER_VER=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VER}") \
-    && wget -q "https://chromedriver.storage.googleapis.com/${DRIVER_VER}/chromedriver_linux64.zip" -O /tmp/chromedriver.zip \
-    && unzip -o /tmp/chromedriver.zip -d /usr/local/bin/ \
+RUN apt-get update && apt-get install -y jq --no-install-recommends \
+    && CHROME_MAJOR_VERSION=$(google-chrome --version | sed -E 's/.* ([0-9]+)(\.[0-9]+){3}.*/\1/') \
+    && echo "Chrome Major Version: ${CHROME_MAJOR_VERSION}" \
+    && DRIVER_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" \
+       | jq -r ".channels.Stable.downloads.chromedriver[] | select(.platform == \"linux64\") | .url") \
+    && wget -q "$DRIVER_URL" -O /tmp/chromedriver.zip \
+    && unzip -o /tmp/chromedriver.zip -d /tmp/ \
+    && mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/ \
     && chmod +x /usr/local/bin/chromedriver \
-    && rm /tmp/chromedriver.zip
+    && rm -rf /tmp/chromedriver.zip /tmp/chromedriver-linux64 \
+    && apt-get purge -y jq && apt-get autoremove -y
 
 WORKDIR /app
 
